@@ -1,0 +1,160 @@
+*&---------------------------------------------------------------------*
+*&  Include           ZINGBLMM0_VENDOR_CREATE_A
+*&---------------------------------------------------------------------*
+constants:
+  lc_x    type c  value 'X',
+  lc_k    type c  value 'K',
+  lc_int(3)  type c  value 'INT'.
+
+data:
+  lt_partner_pull   type table of zpartner_pull,
+  lt_zpartner_msgs  type table of zpartner_msgs,
+  lt_partner_whtax  type table of zpartner_whtax,
+  lt_partner_contact type table of zpartner_contact,
+  lt_partner_bank   type table of zpartner_bank,
+  lt_partner_ordadd type table of zpartner_ordadd,
+  flag_oa           type char1,
+  flag_bank         type char1,
+
+  ls_partner_pull   type zpartner_pull,
+  ls_zpartner_msgs  type zpartner_msgs,
+  ls_partner_whtax  type zpartner_whtax,
+  ls_partner_contact type zpartner_contact,
+  ls_partner_bank   type zpartner_bank,
+  ls_partner_ordadd type zpartner_ordadd,
+  ls_partner_future type zpartner_future,
+
+  ls_bank_address   type bapi1011_address,
+  ls_ramo           type zmmvap_ramo,
+  lv_land1          type land1,
+  lv_waers          type waers,
+  lv_nal            type c,
+  lv_offset         type arbcig_systemid,
+
+  lv_bankl          type bankl,
+  lv_bankl_2        type bankl,
+  lv_bvtyp          type bvtyp.
+
+data:
+  error_commit      type  bapiret2,
+  s_error_metodo    type  cvis_message,
+
+  i_vendor          type vmds_ei_extern_t,
+  i_vendor_oa       type vmds_ei_extern_t,
+  i_vendor_oa_m     type vmds_ei_extern_t,
+  i_contacts        type vmds_ei_contacts_t,
+  i_functions       type vmds_ei_functions_t,
+  i_functions_oa    type vmds_ei_functions_t,
+  i_functions_oa_m  type vmds_ei_functions_t,
+  i_phone           type cvis_ei_phone_t,
+  i_smtp            type cvis_ei_smtp_t,
+  i_remark          type cvis_ei_comrem_t,
+  i_bank            type cvis_ei_bankdetail_t,
+  lt_t024w          type table of t024w,
+  lt_t001w          type table of t001w,
+  lt_t001k          type table of t001k,
+  lt_t001b          type table of t001b,
+  aux_t001b         type table of t001b,
+  lt_arbcig_an_vendor type table of arbcig_an_vendor,
+  lt_arbcig_systidmap type table of arbcig_systidmap,
+  lt_ztagfin_alt_adrc type table of ztagfin_alt_adrc,
+  i_company         type vmds_ei_company_t,
+  i_purchasing      type vmds_ei_purchasing_t,
+  i_purchasing_oa   type vmds_ei_purchasing_t,
+  i_purchasing_oa_m type vmds_ei_purchasing_t,
+  i_messages        type bapiret2,
+
+  s_vendor          like line of i_vendor,
+  s_vendor_oa       like line of i_vendor,
+  s_vendor_oa_m     like line of i_vendor,
+  s_contacts        type vmds_ei_contacts,
+
+  i_cont_comm_smtp  type cvis_ei_smtp_t,
+  s_cont_comm_smtp  like line of i_cont_comm_smtp,
+
+  i_cont_comm_notes type cvis_ei_comrem_t,
+  s_cont_comm_notes like line of i_cont_comm_notes,
+
+  i_cont_comm_phone type cvis_ei_phone_t,
+  s_cont_comm_phone like line of i_cont_comm_phone,
+
+  s_wtax_type       type vmds_ei_wtax_type,
+  i_wtax_type       type vmds_ei_wtax_type_t,
+
+  s_functions       type vmds_ei_functions,
+  s_functions_oa    type vmds_ei_functions,
+  s_functions_oa_m  type vmds_ei_functions,
+  s_phone           type cvis_ei_phone_str,
+  s_smtp            type cvis_ei_smtp_str,
+  s_remark          type cvis_ei_comrem,
+  s_bank            type cvis_ei_cvi_bankdetail,
+  ls_t001k          type t001k,
+  ls_t001b          type t001b,
+  ls_aux_t001b      type t001b,
+  ls_arbcig_an_vendor type arbcig_an_vendor,
+  ls_arbcig_systidmap type arbcig_systidmap,
+  ls_ztagfin_alt_adrc type ztagfin_alt_adrc,
+  s_company         type vmds_ei_company,
+  s_purchasing      type vmds_ei_purchasing,
+  s_purchasing_oa   type vmds_ei_purchasing,
+  s_purchasing_oa_m type vmds_ei_purchasing,
+
+  s_lifnr           type vmds_ei_extern,
+  s_lifnr_oa        type vmds_ei_extern,
+
+  lv_lifnr          type lifnr,
+  lv_year           type char4.
+
+data:
+  s_master_data         type vmds_ei_main,
+  s_master_data_correct	type vmds_ei_main,
+  s_message_defective   type cvis_message,
+  s_master_data_oa         type vmds_ei_main,
+  s_master_data_correct_oa type vmds_ei_main,
+  s_message_defective_oa   type cvis_message,
+  s_master_data_oa_m         type vmds_ei_main,
+  s_master_data_correct_oa_m type vmds_ei_main,
+  s_message_defective_oa_m   type cvis_message.
+
+*DATA : BEGIN OF it_bukrs OCCURS 10,
+*  bukrs LIKE zpartner_pull-bukrs,
+*END OF it_bukrs.
+
+types: begin of st_currency,
+        bvtyp type bvtyp,
+      end of st_currency.
+
+data: lt_currency type table of st_currency,
+      ls_currency type st_currency.
+
+types: begin of ty_bukrs,
+        bukrs type bukrs,
+       end of ty_bukrs,
+
+       begin of ty_payment,
+         bukrs type zpayment_methods-bukrs,
+         zwels type zpayment_methods-zwels,
+         hbkid type zpayment_methods-hbkid,
+       end of ty_payment.
+
+data:
+   it_bukrs   type table of ty_bukrs,
+   i_payment  type table of ty_payment,
+
+   ls_bukrs   type          ty_bukrs,
+   s_payment  type          ty_payment.
+
+types: range_id type range of zunique_id.
+data: lt_id type range_id,
+      ls_id type line of range_id.
+
+data: ls_messages_oa type bapiret2,
+      ls_messages_bk type bapiret2,
+      lt_log_oa type table of zordadd_log,
+      ls_log_oa type zordadd_log,
+      lt_bank_log type table of zbank_log,
+      ls_bank_log type zbank_log.
+
+  data: ls_header like thead,
+        lt_lines type table of tline,
+        ls_lines type tline.
